@@ -4,19 +4,10 @@ use std::net::TcpListener;
 use std::net::TcpStream;
 
 fn main() {
-    let listener = 
-    match TcpListener::bind("127.0.0.1:7878") {
-        Ok(t) => t,
-        Err(e) => panic!("Fail message: {}", e),
-    };
-
+    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    
     for stream in listener.incoming() {
-        let stream =
-        match stream {
-            Ok(t) => t,
-            Err(e) => panic!("Fail message: {}", e),
-        };
-
+        let stream = stream.unwrap();
         handle_connection(stream);
     }
 }
@@ -30,33 +21,21 @@ fn handle_connection(mut stream: TcpStream) {
     };
 
     //Parse request header
-    let get = b"GET / HTTP/1.1\r\n";
-    let (status_line, filename) = if buffer.starts_with(get) {
+    let (status_line, filename) = if buffer.starts_with(b"GET / HTTP/1.1\r\n") {
         ("HTTP/1.1 200 OK", "index.html")
     } else {
         ("HTTP/1.1 404 NOT FOUND", "404.html")
     };
 
     //Create response string
-    let contents = 
-    match fs::read_to_string(filename) {
-        Ok(t) => t,
-        Err(e) => panic!("Fail message: {}", e),
-    };
-    let response = format!(
-        "{}\r\nContent-Length: {}\r\n\r\n{}",
+    let contents = fs::read_to_string(filename).unwrap();
+    let response = format!("{}\r\nContent-Length: {}\r\n\r\n{}",
         status_line,
         contents.len(),
         contents
     );
 
     //Write response to client
-    match stream.write_all(response.as_bytes()) {
-        Ok(_t) => (),
-        Err(e) => panic!("Fail message: {}", e),
-    }
-    match stream.flush() {
-        Ok(_t) => (),
-        Err(e) => panic!("Fail message: {}", e),
-    }
+    stream.write_all(response.as_bytes()).unwrap();
+    stream.flush().unwrap();
 }
